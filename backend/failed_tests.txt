@@ -1,0 +1,337 @@
+<<<<<<< HEAD
+[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31mF[0m[31mF[0m[31mF[0m[31mF[0m[32m.[0m[32m.[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m [ 28%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m [ 56%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m [ 84%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[31m                                  [100%][0m
+=================================== FAILURES ===================================
+[31m[1m_____________________________ test_get_my_company ______________________________[0m
+[1m[31mtests/test_api_companies.py[0m:14: in test_get_my_company
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+[31m[1m____________________________ test_update_my_company ____________________________[0m
+[1m[31mtests/test_api_companies.py[0m:37: in test_update_my_company
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+[31m[1m__________________ test_company_scope_filters_developer_list ___________________[0m
+[1m[31mtests/test_api_developers.py[0m:110: in test_company_scope_filters_developer_list
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+[31m[1m______________ test_vendor_scope_hides_client_internal_developers ______________[0m
+[1m[31mtests/test_api_developers.py[0m:178: in test_vendor_scope_hides_client_internal_developers
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:24:16.918972Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m_______ test_vendor_team_kpis_empty_when_no_external_developers_assigned _______[0m
+[1m[31mtests/test_api_developers.py[0m:270: in test_vendor_team_kpis_empty_when_no_external_developers_assigned
+    principal_override(AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:24:17.353132Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m__ test_vendor_team_kpis_uses_external_identity_without_leaking_internal_devs __[0m
+[1m[31mtests/test_api_developers.py[0m:419: in test_vendor_team_kpis_uses_external_identity_without_leaking_internal_devs
+    principal_override(AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:24:17.769747Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m________ test_vendor_can_match_developer_by_full_name_to_trello_member _________[0m
+[1m[31mtests/test_api_developers.py[0m:478: in test_vendor_can_match_developer_by_full_name_to_trello_member
+    principal_override(AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:24:18.233978Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m__________ test_developer_account_can_only_access_its_own_kpi_subject __________[0m
+[1m[31mtests/test_api_developers.py[0m:571: in test_developer_account_can_only_access_its_own_kpi_subject
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:24:19.294766Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m____ test_client_company_can_list_vendor_developers_assigned_via_engagement ____[0m
+[1m[31mtests/test_api_engagements.py[0m:100: in test_client_company_can_list_vendor_developers_assigned_via_engagement
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+----------------------------- Captured stdout call -----------------------------
+[2m2026-04-23T01:24:25.579006Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log call -------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m________ test_client_company_cannot_access_unassigned_vendor_developer _________[0m
+[1m[31mtests/test_api_engagements.py[0m:136: in test_client_company_cannot_access_unassigned_vendor_developer
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+[31m[1m______________ test_list_projects_is_scoped_to_company_visibility ______________[0m
+[1m[31mtests/test_api_projects.py[0m:112: in test_list_projects_is_scoped_to_company_visibility
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+----------------------------- Captured stdout call -----------------------------
+[2m2026-04-23T01:25:15.797633Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+[2m2026-04-23T01:25:15.816439Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log call -------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m_______________ test_list_mismatches_returns_empty_when_no_data ________________[0m
+[1m[31mtests/test_api_repository_activity.py[0m:13: in test_list_mismatches_returns_empty_when_no_data
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:25:18.327735Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m___________________ test_trigger_scan_returns_mocked_result ____________________[0m
+[1m[31mtests/test_api_repository_activity.py[0m:38: in test_trigger_scan_returns_mocked_result
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:25:18.731280Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m______________________ test_notification_service_helpers _______________________[0m
+[1m[31mtests/test_services_notification.py[0m:100: in test_notification_service_helpers
+    ticket_title="T1", ticket_id=1, idle_hours=12.5, level=EscalationLevel.TEAM
+[1m[31mE   AttributeError: type object 'EscalationLevel' has no attribute 'TEAM'[0m
+[33m=============================== warnings summary ===============================[0m
+tests/test_api_auth.py::test_me_returns_current_user
+  /usr/local/lib/python3.12/site-packages/jose/jwt.py:311: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = timegm(datetime.utcnow().utctimetuple())
+
+tests/test_api_blockers.py::test_list_blockers_response_matches_frontend_contract
+  /usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:172: UserWarning: Field name "EVENT_TYPE" in "TicketUpdatedEvent" shadows an attribute in parent "BaseEvent"
+    warnings.warn(
+
+tests/test_api_blockers.py::test_list_blockers_response_matches_frontend_contract
+  /usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:172: UserWarning: Field name "EVENT_TYPE" in "TicketStalledEvent" shadows an attribute in parent "BaseEvent"
+    warnings.warn(
+
+tests/test_api_blockers.py::test_list_blockers_response_matches_frontend_contract
+  /usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:172: UserWarning: Field name "EVENT_TYPE" in "BlockerDetectedEvent" shadows an attribute in parent "BaseEvent"
+    warnings.warn(
+
+tests/test_api_blockers.py::test_list_blockers_response_matches_frontend_contract
+  /usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:172: UserWarning: Field name "EVENT_TYPE" in "BlockerEscalatedEvent" shadows an attribute in parent "BaseEvent"
+    warnings.warn(
+
+tests/test_api_blockers.py::test_list_blockers_response_matches_frontend_contract
+  /usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:172: UserWarning: Field name "EVENT_TYPE" in "RepoActivityUpdatedEvent" shadows an attribute in parent "BaseEvent"
+    warnings.warn(
+
+tests/test_api_health.py::test_health_response_shape
+tests/test_api_websockets.py::test_websocket_connect
+tests/test_integrations_smoke.py::test_smoke_health_has_required_fields
+tests/test_integrations_smoke.py::test_smoke_health_version_is_string
+  /home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/stash.py:108: RuntimeWarning: coroutine 'Connection._cancel' was never awaited
+    del self._storage[key]
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_services_notification.py::test_slack_channel_send_success
+  /app/app/services/notification_service.py:123: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    resp.raise_for_status()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+../home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/cacheprovider.py:475
+  /home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/cacheprovider.py:475: PytestCacheWarning: could not create cache path /app/.pytest_cache/v/cache/nodeids: [Errno 13] Permission denied: '/app/pytest-cache-files-x6m8yieo'
+    config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+
+../home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/cacheprovider.py:429
+  /home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/cacheprovider.py:429: PytestCacheWarning: could not create cache path /app/.pytest_cache/v/cache/lastfailed: [Errno 13] Permission denied: '/app/pytest-cache-files-5jgp_fzo'
+    config.cache.set("cache/lastfailed", self.lastfailed)
+
+../home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/stepwise.py:51
+  /home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/stepwise.py:51: PytestCacheWarning: could not create cache path /app/.pytest_cache/v/cache/stepwise: [Errno 13] Permission denied: '/app/pytest-cache-files-pjxha4w4'
+    session.config.cache.set(STEPWISE_CACHE_DIR, [])
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m tests/test_api_companies.py::[1mtest_get_my_company[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_companies.py::[1mtest_update_my_company[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_developers.py::[1mtest_company_scope_filters_developer_list[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_developers.py::[1mtest_vendor_scope_hides_client_internal_developers[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_developers.py::[1mtest_vendor_team_kpis_empty_when_no_external_developers_assigned[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_developers.py::[1mtest_vendor_team_kpis_uses_external_identity_without_leaking_internal_devs[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_developers.py::[1mtest_vendor_can_match_developer_by_full_name_to_trello_member[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_developers.py::[1mtest_developer_account_can_only_access_its_own_kpi_subject[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_engagements.py::[1mtest_client_company_can_list_vendor_developers_assigned_via_engagement[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_engagements.py::[1mtest_client_company_cannot_access_unassigned_vendor_developer[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_projects.py::[1mtest_list_projects_is_scoped_to_company_visibility[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_repository_activity.py::[1mtest_list_mismatches_returns_empty_when_no_data[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_repository_activity.py::[1mtest_trigger_scan_returns_mocked_result[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_services_notification.py::[1mtest_notification_service_helpers[0m - AttributeError: type object 'EscalationLevel' has no attribute 'TEAM'
+=======
+[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31mF[0m[31mF[0m[31mF[0m[31mF[0m[32m.[0m[32m.[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m [ 28%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m [ 56%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m [ 84%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[31m                                  [100%][0m
+=================================== FAILURES ===================================
+[31m[1m_____________________________ test_get_my_company ______________________________[0m
+[1m[31mtests/test_api_companies.py[0m:14: in test_get_my_company
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+[31m[1m____________________________ test_update_my_company ____________________________[0m
+[1m[31mtests/test_api_companies.py[0m:37: in test_update_my_company
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+[31m[1m__________________ test_company_scope_filters_developer_list ___________________[0m
+[1m[31mtests/test_api_developers.py[0m:110: in test_company_scope_filters_developer_list
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+[31m[1m______________ test_vendor_scope_hides_client_internal_developers ______________[0m
+[1m[31mtests/test_api_developers.py[0m:178: in test_vendor_scope_hides_client_internal_developers
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:24:16.918972Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m_______ test_vendor_team_kpis_empty_when_no_external_developers_assigned _______[0m
+[1m[31mtests/test_api_developers.py[0m:270: in test_vendor_team_kpis_empty_when_no_external_developers_assigned
+    principal_override(AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:24:17.353132Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m__ test_vendor_team_kpis_uses_external_identity_without_leaking_internal_devs __[0m
+[1m[31mtests/test_api_developers.py[0m:419: in test_vendor_team_kpis_uses_external_identity_without_leaking_internal_devs
+    principal_override(AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:24:17.769747Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m________ test_vendor_can_match_developer_by_full_name_to_trello_member _________[0m
+[1m[31mtests/test_api_developers.py[0m:478: in test_vendor_can_match_developer_by_full_name_to_trello_member
+    principal_override(AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:24:18.233978Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m__________ test_developer_account_can_only_access_its_own_kpi_subject __________[0m
+[1m[31mtests/test_api_developers.py[0m:571: in test_developer_account_can_only_access_its_own_kpi_subject
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:24:19.294766Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m____ test_client_company_can_list_vendor_developers_assigned_via_engagement ____[0m
+[1m[31mtests/test_api_engagements.py[0m:100: in test_client_company_can_list_vendor_developers_assigned_via_engagement
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+----------------------------- Captured stdout call -----------------------------
+[2m2026-04-23T01:24:25.579006Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log call -------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m________ test_client_company_cannot_access_unassigned_vendor_developer _________[0m
+[1m[31mtests/test_api_engagements.py[0m:136: in test_client_company_cannot_access_unassigned_vendor_developer
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+[31m[1m______________ test_list_projects_is_scoped_to_company_visibility ______________[0m
+[1m[31mtests/test_api_projects.py[0m:112: in test_list_projects_is_scoped_to_company_visibility
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+----------------------------- Captured stdout call -----------------------------
+[2m2026-04-23T01:25:15.797633Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+[2m2026-04-23T01:25:15.816439Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log call -------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m_______________ test_list_mismatches_returns_empty_when_no_data ________________[0m
+[1m[31mtests/test_api_repository_activity.py[0m:13: in test_list_mismatches_returns_empty_when_no_data
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:25:18.327735Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m___________________ test_trigger_scan_returns_mocked_result ____________________[0m
+[1m[31mtests/test_api_repository_activity.py[0m:38: in test_trigger_scan_returns_mocked_result
+    AuthPrincipal(
+[1m[31mE   TypeError: AuthPrincipal.__init__() missing 1 required positional argument: 'company_slug'[0m
+---------------------------- Captured stdout setup -----------------------------
+[2m2026-04-23T01:25:18.731280Z[0m [[32m[1minfo     [0m] [1mHTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"[0m [[0m[1m[34mhttpx[0m][0m [36mapp[0m=[35mSprintPulse[0m [36menv[0m=[35mdevelopment[0m [36mversion[0m=[35m1.0.0[0m
+------------------------------ Captured log setup ------------------------------
+[32mINFO    [0m httpx:_client.py:1786 HTTP Request: POST http://testserver/api/v1/projects "HTTP/1.1 201 Created"
+[31m[1m______________________ test_notification_service_helpers _______________________[0m
+[1m[31mtests/test_services_notification.py[0m:100: in test_notification_service_helpers
+    ticket_title="T1", ticket_id=1, idle_hours=12.5, level=EscalationLevel.TEAM
+[1m[31mE   AttributeError: type object 'EscalationLevel' has no attribute 'TEAM'[0m
+[33m=============================== warnings summary ===============================[0m
+tests/test_api_auth.py::test_me_returns_current_user
+  /usr/local/lib/python3.12/site-packages/jose/jwt.py:311: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = timegm(datetime.utcnow().utctimetuple())
+
+tests/test_api_blockers.py::test_list_blockers_response_matches_frontend_contract
+  /usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:172: UserWarning: Field name "EVENT_TYPE" in "TicketUpdatedEvent" shadows an attribute in parent "BaseEvent"
+    warnings.warn(
+
+tests/test_api_blockers.py::test_list_blockers_response_matches_frontend_contract
+  /usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:172: UserWarning: Field name "EVENT_TYPE" in "TicketStalledEvent" shadows an attribute in parent "BaseEvent"
+    warnings.warn(
+
+tests/test_api_blockers.py::test_list_blockers_response_matches_frontend_contract
+  /usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:172: UserWarning: Field name "EVENT_TYPE" in "BlockerDetectedEvent" shadows an attribute in parent "BaseEvent"
+    warnings.warn(
+
+tests/test_api_blockers.py::test_list_blockers_response_matches_frontend_contract
+  /usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:172: UserWarning: Field name "EVENT_TYPE" in "BlockerEscalatedEvent" shadows an attribute in parent "BaseEvent"
+    warnings.warn(
+
+tests/test_api_blockers.py::test_list_blockers_response_matches_frontend_contract
+  /usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:172: UserWarning: Field name "EVENT_TYPE" in "RepoActivityUpdatedEvent" shadows an attribute in parent "BaseEvent"
+    warnings.warn(
+
+tests/test_api_health.py::test_health_response_shape
+tests/test_api_websockets.py::test_websocket_connect
+tests/test_integrations_smoke.py::test_smoke_health_has_required_fields
+tests/test_integrations_smoke.py::test_smoke_health_version_is_string
+  /home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/stash.py:108: RuntimeWarning: coroutine 'Connection._cancel' was never awaited
+    del self._storage[key]
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_services_notification.py::test_slack_channel_send_success
+  /app/app/services/notification_service.py:123: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    resp.raise_for_status()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+../home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/cacheprovider.py:475
+  /home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/cacheprovider.py:475: PytestCacheWarning: could not create cache path /app/.pytest_cache/v/cache/nodeids: [Errno 13] Permission denied: '/app/pytest-cache-files-x6m8yieo'
+    config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+
+../home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/cacheprovider.py:429
+  /home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/cacheprovider.py:429: PytestCacheWarning: could not create cache path /app/.pytest_cache/v/cache/lastfailed: [Errno 13] Permission denied: '/app/pytest-cache-files-5jgp_fzo'
+    config.cache.set("cache/lastfailed", self.lastfailed)
+
+../home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/stepwise.py:51
+  /home/sprintpulse/.local/lib/python3.12/site-packages/_pytest/stepwise.py:51: PytestCacheWarning: could not create cache path /app/.pytest_cache/v/cache/stepwise: [Errno 13] Permission denied: '/app/pytest-cache-files-pjxha4w4'
+    session.config.cache.set(STEPWISE_CACHE_DIR, [])
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+[36m[1m=========================== short test summary info ============================[0m
+[31mFAILED[0m tests/test_api_companies.py::[1mtest_get_my_company[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_companies.py::[1mtest_update_my_company[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_developers.py::[1mtest_company_scope_filters_developer_list[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_developers.py::[1mtest_vendor_scope_hides_client_internal_developers[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_developers.py::[1mtest_vendor_team_kpis_empty_when_no_external_developers_assigned[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_developers.py::[1mtest_vendor_team_kpis_uses_external_identity_without_leaking_internal_devs[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_developers.py::[1mtest_vendor_can_match_developer_by_full_name_to_trello_member[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_developers.py::[1mtest_developer_account_can_only_access_its_own_kpi_subject[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_engagements.py::[1mtest_client_company_can_list_vendor_developers_assigned_via_engagement[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_engagements.py::[1mtest_client_company_cannot_access_unassigned_vendor_developer[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_projects.py::[1mtest_list_projects_is_scoped_to_company_visibility[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_repository_activity.py::[1mtest_list_mismatches_returns_empty_when_no_data[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_api_repository_activity.py::[1mtest_trigger_scan_returns_mocked_result[0m - TypeError: AuthPrincipal.__init__() missing 1 required positional argument:...
+[31mFAILED[0m tests/test_services_notification.py::[1mtest_notification_service_helpers[0m - AttributeError: type object 'EscalationLevel' has no attribute 'TEAM'
+>>>>>>> origin/main

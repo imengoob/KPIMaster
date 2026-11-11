@@ -1,0 +1,340 @@
+    """
+    RAG (Retrieval-Augmented Generation) service.
+    Real implementation with ChromaDB + Google Gemini (2.5 Flash).
+
+    UPGRADE vs the previous version:
+    - Conversation memory: answer() now accepts `history` — the last few
+        turns of the conversation — and forwards them to Gemini as prior
+        contents, so follow-up questions like "and for that one?" or "give me
+        more detail" resolve correctly instead of being treated as a brand new,
+        context-free question.
+    - Observability: every call is timed and counted via `rag_stats`, a
+        small in-process counter (see RAGStats below). Exposed through
+        GET /assistant/stats in assistant.py. This is intentionally NOT
+        persisted to a database — it resets on restart — which is an accepted
+        trade-off for a lightweight, zero-extra-infrastructure metrics view.
+        If you need metrics that survive restarts/multiple workers, swap the
+        in-memory counters for Redis INCR / a Prometheus Histogram instead
+        (the project already depends on prometheus_client and redis).
+    """
+
+    from __future__ import annotations
+
+    import asyncio
+    import threading
+    import time
+    from collections import deque
+    from typing import Any, Literal, TypedDict
+
+    import httpx
+
+    from app.config import settings
+    from app.infrastructure.vector_store.chroma_store import chroma_store
+
+    GEMINI_API_URL = (
+        "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    )
+
+    MAX_HISTORY_TURNS = 4  # last 4 exchanges (user+assistant pairs) sent to Gemini
+
+
+    class ConversationTurn(TypedDict):
+        role: Literal["user", "assistant"]  # frontend/API vocabulary
+        content: str
+
+
+    # ── Observability ───────────────────────────────────────────────────────────
+
+
+    class RAGStats:
+        """
+        Minimal thread-safe in-memory counters for the assistant's observability
+        dashboard. Not a replacement for real APM — just enough to show, live,
+        during a demo: how many questions were asked, how many came back empty,
+        and how fast Gemini responded on average.
+        """
+
+        def __init__(self, latency_window: int = 200) -> None:
+            self._lock = threading.Lock()
+            self._total_questions = 0
+            self._no_data_count = 0
+            self._errors = 0
+            self._latencies_ms: deque[float] = deque(maxlen=latency_window)
+            self._intent_counts: dict[str, int] = {}
+
+        def record(self, *, intent: str, latency_ms: float, no_data: bool, error: bool = False) -> None:
+            with self._lock:
+                self._total_questions += 1
+                if no_data:
+                    self._no_data_count += 1
+                if error:
+                    self._errors += 1
+                self._latencies_ms.append(latency_ms)
+                self._intent_counts[intent] = self._intent_counts.get(intent, 0) + 1
+
+        def snapshot(self) -> dict[str, Any]:
+            with self._lock:
+                total = self._total_questions
+                no_data_rate = (self._no_data_count / total) if total else 0.0
+                avg_latency = (sum(self._latencies_ms) / len(self._latencies_ms)) if self._latencies_ms else 0.0
+                return {
+                    "total_questions": total,
+                    "no_data_count": self._no_data_count,
+                    "no_data_rate": round(no_data_rate, 3),
+                    "error_count": self._errors,
+                    "avg_gemini_latency_ms": round(avg_latency, 1),
+                    "questions_by_intent": dict(self._intent_counts),
+                }
+
+
+    rag_stats = RAGStats()
+
+
+    class RAGService:
+        def __init__(self) -> None:
+            self.api_key = settings.gemini_api_key
+            self.model = "gemini-2.5-flash"
+
+        async def answer(
+            self,
+            query: str,
+            project_id: int,
+            language: str = "auto",
+            history: list[ConversationTurn] | None = None,
+        ) -> dict[str, Any]:
+            started = time.perf_counter()
+            resolved_language = self._detect_language(query) if language == "auto" else language
+
+            if self._is_aggregate_query(query):
+                results = await asyncio.to_thread(self._get_full_dataset, project_id)
+            else:
+                results = await asyncio.to_thread(chroma_store.search, query, project_id, 7)
+
+            if not results:
+                latency_ms = (time.perf_counter() - started) * 1000
+                rag_stats.record(intent="no_data", latency_ms=latency_ms, no_data=True)
+                return {
+                    "answer": self._no_data_response(resolved_language),
+                    "sources": [],
+                    "confidence": 0.0,
+                    "intent": "no_data",
+                }
+
+            intent = self._detect_intent(query)
+            context = self._build_context(results)
+
+            try:
+                answer = await self._generate(
+                    query, context, resolved_language, intent, history or []
+                )
+                error = False
+            except Exception:
+                answer = self._no_data_response(resolved_language)
+                error = True
+
+            latency_ms = (time.perf_counter() - started) * 1000
+            rag_stats.record(intent=intent, latency_ms=latency_ms, no_data=False, error=error)
+
+            sources = list(
+                {
+                    f"{r['type']}: {r['metadata'].get('ticket_id') or r['metadata'].get('name') or r['id']}"
+                    for r in results[:3]
+                }
+            )
+
+            return {
+                "answer": answer,
+                "sources": sources,
+                "confidence": self._calculate_confidence(results),
+                "intent": intent,
+            }
+
+        def _is_aggregate_query(self, query: str) -> bool:
+            lower = query.lower()
+            triggers = (
+                "how many", "count", "all tickets", "each status", "breakdown",
+                "every ticket", "total", "list all",
+                "combien de", "toutes les", "tous les", "répartition", "chaque statut",
+                "combien", "chacun",
+            )
+            return any(t in lower for t in triggers)
+
+        def _get_full_dataset(self, project_id: int) -> list[dict[str, Any]]:
+            results: list[dict[str, Any]] = []
+            for entity_type in ("tickets", "blockers", "developers", "sprints", "kpis"):
+                results.extend(chroma_store.get_all(entity_type, project_id))
+            return results
+
+        def _detect_language(self, text: str) -> str:
+            lower = text.lower()
+            french_accents = set("éèêëàâäùûüçîï")
+            if any(ch in french_accents for ch in lower):
+                return "fr"
+            french_words = (
+                "quel", "quels", "quelle", "quelles", "combien", "où", "pourquoi",
+                "comment", "donne", "donner", "quoi", "les", "des", "sont", "est",
+                "bloqué", "bloqués", "sprint actuel", "équipe",
+            )
+            if any(f" {w} " in f" {lower} " for w in french_words):
+                return "fr"
+            return "en"
+
+        def _detect_intent(self, query: str) -> str:
+            query_lower = query.lower()
+            intents = {
+                "blockers": ["blocker", "bloqué", "stuck", "escalation", "bloque"],
+                "tickets": ["ticket", "tâche", "task", "carte"],
+                "developers": ["developer", "développeur", "dev", "équipe", "team"],
+                "sprint": ["sprint", "vélocité", "velocity", "burndown"],
+                "kpi": ["kpi", "métrique", "metric", "performance"],
+                "actions": ["action", "à faire", "todo", "priorité"],
+            }
+            for intent, keywords in intents.items():
+                if any(kw in query_lower for kw in keywords):
+                    return intent
+            return "general"
+
+        def _build_context(self, results: list[dict]) -> str:
+            by_type: dict[str, list[dict]] = {}
+            for r in results:
+                by_type.setdefault(r["type"], []).append(r)
+
+            parts = []
+            for entity_type, items in by_type.items():
+                parts.append(f"\n=== {entity_type.upper()} ===")
+                parts.extend(item["content"] for item in items)
+            return "\n".join(parts)
+
+        def _build_history_contents(self, history: list[ConversationTurn]) -> list[dict]:
+            """
+            Converts the frontend's {role: "user"|"assistant", content} turns into
+            Gemini's `contents` shape, which uses "user" and "model" as roles.
+            Only the last MAX_HISTORY_TURNS*2 messages are kept, both to bound
+            cost/latency and because older turns are rarely relevant to a
+            follow-up question in this dashboard-assistant use case.
+            """
+            trimmed = history[-(MAX_HISTORY_TURNS * 2):]
+            contents = []
+            for turn in trimmed:
+                gemini_role = "model" if turn["role"] == "assistant" else "user"
+                contents.append({"role": gemini_role, "parts": [{"text": turn["content"]}]})
+            return contents
+
+        async def _generate(
+            self,
+            query: str,
+            context: str,
+            language: str,
+            intent: str,
+            history: list[ConversationTurn],
+        ) -> str:
+            system_prompt = self._get_system_prompt(language, intent)
+
+            if language == "fr":
+                user_prompt = (
+                    f"Contexte du projet :\n{context}\n\n"
+                    f"Question de l'utilisateur : {query}\n\n"
+                    "Réponds en FRANÇAIS, de manière concise et professionnelle, "
+                    "en te basant UNIQUEMENT sur le contexte ci-dessus. Si la question "
+                    "fait référence à l'échange précédent (ex. \"et celui-là ?\"), "
+                    "utilise l'historique de conversation fourni pour comprendre à quoi "
+                    "elle se réfère."
+                )
+            else:
+                user_prompt = (
+                    f"Project context:\n{context}\n\n"
+                    f"User question: {query}\n\n"
+                    "Reply in ENGLISH, concisely and professionally, based ONLY "
+                    "on the context above. If the question refers back to the "
+                    "previous exchange (e.g. \"what about that one?\"), use the "
+                    "provided conversation history to resolve what it refers to."
+                )
+
+            if not self.api_key:
+                raise RuntimeError("GEMINI_API_KEY is not configured")
+
+            # Conversation memory: prior turns come first, current question last.
+            contents = self._build_history_contents(history)
+            contents.append({"role": "user", "parts": [{"text": user_prompt}]})
+
+            url = GEMINI_API_URL.format(model=self.model)
+            payload = {
+                "system_instruction": {"parts": [{"text": system_prompt}]},
+                "contents": contents,
+                "generationConfig": {"temperature": 0.3, "maxOutputTokens": 500},
+            }
+
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                resp = await client.post(url, params={"key": self.api_key}, json=payload)
+                resp.raise_for_status()
+                data = resp.json()
+
+            try:
+                candidates = data["candidates"][0]["content"]["parts"]
+                text = "".join(part.get("text", "") for part in candidates).strip()
+            except (KeyError, IndexError):
+                text = ""
+
+            return text or self._no_data_response(language)
+
+        def _get_system_prompt(self, language: str, intent: str) -> str:
+            if language == "fr":
+                base = (
+                    "Tu es KPIMaster AI, un assistant expert en gestion de projets agiles.\n"
+                    "Tu analyses les données de sprint (tickets, blockers, KPIs, développeurs) "
+                    "et tu réponds de manière claire et professionnelle.\n"
+                    "Sois concis (2-4 phrases maximum). Base-toi UNIQUEMENT sur les données fournies.\n"
+                    "N'invente jamais un identifiant de ticket ou un chiffre absent du contexte.\n"
+                    "Si l'historique de conversation contient des échanges précédents, utilise-les "
+                    "pour comprendre les questions de suivi, mais ne réponds qu'à la question actuelle.\n"
+                    "IMPORTANT : réponds TOUJOURS dans la même langue que la question de "
+                    "l'utilisateur ci-dessous, même si cette instruction est en français."
+                )
+            else:
+                base = (
+                    "You are KPIMaster AI, an expert agile project management assistant.\n"
+                    "You analyze sprint data (tickets, blockers, KPIs, developers) and respond "
+                    "clearly and professionally.\n"
+                    "Be concise (2-4 sentences max). Base your answer ONLY on the provided data.\n"
+                    "Never invent a ticket ID or number that is not in the context.\n"
+                    "If the conversation history contains earlier turns, use them to resolve "
+                    "follow-up questions, but only answer the current question.\n"
+                    "IMPORTANT: ALWAYS reply in the same language as the user's question below, "
+                    "even though this instruction is in English."
+                )
+
+            intent_prompts = {
+                "blockers": "Focus on identifying critical blockers and escalation levels.",
+                "tickets": "Focus on ticket status, priority, and quality scores.",
+                "developers": "Focus on developer performance and workload distribution.",
+                "sprint": "Focus on sprint progress, velocity, and risk assessment.",
+                "kpi": "Focus on metrics and trends.",
+                "actions": "Focus on priorities and next steps.",
+            }
+            if intent in intent_prompts:
+                base += f"\n\nSpecific focus: {intent_prompts[intent]}"
+            return base
+
+        def _calculate_confidence(self, results: list[dict]) -> float:
+            if not results:
+                return 0.0
+            distances = [r.get("distance") for r in results[:3] if r.get("distance") is not None]
+            if not distances:
+                return 0.5
+            avg_distance = sum(distances) / len(distances)
+            return round(max(0.0, min(1.0, 1 - avg_distance)), 2)
+
+        def _no_data_response(self, language: str) -> str:
+            if language == "fr":
+                return (
+                    "Je n'ai pas trouvé de données pertinentes pour cette question. "
+                    "Essayez de reformuler ou vérifiez que le projet contient des données."
+                )
+            return (
+                "I couldn't find relevant data for this question. Try rephrasing or "
+                "check that the project contains data."
+            )
+
+
+    # Singleton — imported as `rag_service` elsewhere.
+    rag_service = RAGService()

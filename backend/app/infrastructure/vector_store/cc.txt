@@ -1,0 +1,467 @@
+"""
+ChromaDB vector store for KPIMaster.
+Handles embeddings, indexing, and semantic search.
+
+UPGRADE vs the previous version (hashing-only):
+  - Adds GeminiEmbeddingFunction, which calls Google's text-embedding-004
+    model (via batchEmbedContents) to produce REAL semantic embeddings
+    instead of the hashing-trick vectors used before. This means a question
+    like "who is struggling this sprint?" can now match a developer record
+    that never contains the word "struggling" — true semantic similarity,
+    not just shared tokens.
+  - Gemini-vs-hashing is decided ONCE at startup via a health check in
+    ChromaVectorStore._select_embedding_function(), never per individual
+    call. An earlier version of this file fell back to hashing on every
+    failed call, which silently mixed two incompatible vector spaces in
+    the same collection (a Gemini embedding and a hashing embedding are
+    NOT comparable, even at the same dimensionality) — that caused the
+    exact same question to intermittently return "no data found" purely
+    depending on whether Gemini happened to respond in time. Now, once a
+    process has chosen Gemini, transient failures are retried (see
+    GeminiEmbeddingFunction) and only raise a clear error if retries are
+    exhausted — never a silent space-switch.
+  - IMPORTANT — BREAKING CHANGE ON DIMENSIONS: text-embedding-004 returns
+    768-dimensional vectors. The old hashing function used 384. Both
+    functions below now use dim=768. Because the stored vectors change
+    meaning entirely, you MUST wipe the existing ./chroma_data directory
+    (or bump CHROMA_PERSIST_DIRECTORY to a new path) after deploying this
+    file — see WIRING_INSTRUCTIONS.md.
+
+Requires: chromadb>=0.5,<0.6, httpx (already a dependency)
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import re
+import time
+import zlib
+from typing import Any
+
+import chromadb
+import httpx
+from chromadb.config import Settings as ChromaSettings
+
+from app.config import settings
+
+logger = logging.getLogger(__name__)
+
+EMBED_DIM = 768  # text-embedding-004 output size; hashing fallback matches it
+GEMINI_EMBED_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/models/"
+    "text-embedding-004:batchEmbedContents"
+)
+
+
+class HashingEmbeddingFunction:
+    """
+    Deterministic, offline, dependency-free embedding function.
+    Kept as the fallback path for GeminiEmbeddingFunction (see below) and
+    as a zero-network option if GEMINI_API_KEY is not configured at all.
+
+    Uses zlib.crc32 (NOT Python's built-in hash()) because it must give the
+    exact same bucket for the exact same word regardless of which worker
+    process or machine computes it.
+    """
+
+    def __init__(self, dim: int = EMBED_DIM) -> None:
+        self.dim = dim
+
+    def name(self) -> str:
+        return "kpimaster-hashing-embedding-v3"
+
+    def __call__(self, input: list[str]) -> list[list[float]]:
+        return [self._embed_one(text) for text in input]
+
+    def _embed_one(self, text: str) -> list[float]:
+        vec = [0.0] * self.dim
+        tokens = re.findall(r"[a-z0-9]+", text.lower())
+        for tok in tokens:
+            idx = zlib.crc32(tok.encode("utf-8")) % self.dim
+            vec[idx] += 1.0
+        norm = sum(v * v for v in vec) ** 0.5
+        if norm > 0:
+            vec = [v / norm for v in vec]
+        return vec
+
+
+class GeminiEmbeddingFunction:
+    """
+    Real semantic embeddings via Gemini's text-embedding-004 model.
+
+    ChromaDB calls embedding functions SYNCHRONOUSLY, and every entry point
+    into chroma_store is already wrapped in asyncio.to_thread() by the
+    callers (assistant.py, rag_service.py) — so a blocking httpx.Client
+    call here is safe and does not freeze the event loop.
+
+    BUG FIXED (root cause of intermittent "no data found" on repeated
+    identical questions): the previous version fell back to
+    HashingEmbeddingFunction on EVERY individual call that failed. A
+    Gemini embedding and a hashing embedding are NOT comparable — they
+    live in unrelated vector spaces, even though both happen to be
+    768-dimensional. If tickets were indexed with real Gemini embeddings
+    but a later *query* transiently failed and silently fell back to
+    hashing, the similarity search compared incompatible vectors and
+    found nothing — explaining why the exact same question sometimes
+    worked and sometimes didn't, purely depending on whether Gemini
+    happened to respond in time for that specific call.
+
+    Fix: retry transient failures several times (network hiccups, brief
+    rate-limit spikes) INSTEAD of silently switching embedding spaces.
+    If Gemini still fails after all retries, raise — the caller
+    (assistant.py) turns that into a clear 500 error rather than a
+    confusing, silently wrong "no data" answer. Whether to use Gemini at
+    all is decided ONCE at startup (see ChromaVectorStore.__init__), not
+    per call — so a collection never contains a mix of the two spaces.
+    """
+
+    def __init__(self, api_key: str, max_retries: int = 3) -> None:
+        self.api_key = api_key
+        self.max_retries = max_retries
+        self._client = httpx.Client(timeout=25.0)
+
+    def name(self) -> str:
+        return "kpimaster-gemini-text-embedding-004"
+
+    def __call__(self, input: list[str]) -> list[list[float]]:
+        last_exc: Exception | None = None
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                return self._embed_via_gemini(input)
+            except Exception as exc:  # noqa: BLE001 — retried below, re-raised if exhausted
+                last_exc = exc
+                logger.warning(
+                    "gemini_embedding_attempt_failed",
+                    extra={"attempt": attempt, "max_retries": self.max_retries, "error": str(exc)},
+                )
+                if attempt < self.max_retries:
+                    time.sleep(0.6 * attempt)  # 0.6s, 1.2s — short exponential backoff
+        # All retries exhausted — raise rather than silently return
+        # hashing vectors, which would corrupt this collection's vector
+        # space. The caller surfaces this as a clear, visible error.
+        raise RuntimeError(f"Gemini embeddings failed after {self.max_retries} attempts") from last_exc
+
+    def _embed_via_gemini(self, texts: list[str]) -> list[list[float]]:
+        # batchEmbedContents embeds up to 100 texts in a single request —
+        # much cheaper than one request per ticket/blocker/etc.
+        requests_payload = [
+            {
+                "model": "models/text-embedding-004",
+                "content": {"parts": [{"text": t[:2000]}]},  # defensive truncation
+                "task_type": "RETRIEVAL_DOCUMENT",
+            }
+            for t in texts
+        ]
+        resp = self._client.post(
+            GEMINI_EMBED_URL,
+            params={"key": self.api_key},
+            json={"requests": requests_payload},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        embeddings = data.get("embeddings", [])
+        if len(embeddings) != len(texts):
+            raise RuntimeError(
+                f"Gemini returned {len(embeddings)} embeddings for {len(texts)} inputs"
+            )
+        return [e["values"] for e in embeddings]
+
+
+class ChromaVectorStore:
+    """
+    ChromaDB wrapper for KPIMaster RAG.
+    Persists data to disk (./chroma_data/ by default) automatically —
+    no explicit .persist() call needed with chromadb>=0.4.
+    """
+
+    ENTITY_TYPES = ("tickets", "blockers", "developers", "sprints", "kpis", "actions")
+
+    def __init__(self, persist_directory: str | None = None):
+        self.persist_dir = persist_directory or settings.chroma_persist_directory
+        self.client = chromadb.PersistentClient(
+            path=self.persist_dir,
+            settings=ChromaSettings(anonymized_telemetry=False),
+        )
+
+        # Decide ONCE, at startup, whether this process uses Gemini or
+        # hashing embeddings — never per call, never mid-session. See the
+        # GeminiEmbeddingFunction docstring for why mixing the two spaces
+        # silently caused intermittent "no data found" answers.
+        self._embedding_function = self._select_embedding_function()
+
+        self.collections = {
+            name: self._get_or_create_collection_safe(name)
+            for name in self.ENTITY_TYPES
+        }
+
+    def _get_or_create_collection_safe(self, name: str):
+        """
+        Wraps get_or_create_collection to work around a known ChromaDB race
+        condition: despite the name, get_or_create_collection is NOT always
+        safely idempotent under concurrent access (e.g. uvicorn --reload
+        starting a parent + child process, or multiple workers, both
+        initializing ChromaVectorStore() at import time simultaneously).
+        When that race is lost, ChromaDB raises UniqueConstraintError
+        instead of just returning the collection the other process already
+        created — this crashes the whole app at import time otherwise.
+        Fix: on that specific error, simply fetch the collection that
+        already exists instead of trying to create it again.
+        """
+        try:
+            return self.client.get_or_create_collection(
+                name, embedding_function=self._embedding_function
+            )
+        except chromadb.errors.UniqueConstraintError:
+            logger.warning(
+                "chroma_collection_creation_race_recovered",
+                extra={"collection": name},
+            )
+            return self.client.get_collection(name, embedding_function=self._embedding_function)
+
+    def _select_embedding_function(self):
+        if not settings.gemini_api_key:
+            logger.info("chroma_using_hashing_embeddings_no_gemini_key")
+            return HashingEmbeddingFunction(dim=EMBED_DIM)
+
+        candidate = GeminiEmbeddingFunction(api_key=settings.gemini_api_key)
+        try:
+            # One real call at startup: proves the key/network/quota all
+            # work RIGHT NOW, before any ticket/question depends on it.
+            candidate(["healthcheck"])
+            logger.info("chroma_using_gemini_embeddings")
+            return candidate
+        except Exception as exc:  # noqa: BLE001 — startup fallback decision, logged loudly
+            logger.error(
+                "gemini_embeddings_healthcheck_failed_using_hashing_instead",
+                extra={"error": str(exc)},
+            )
+            return HashingEmbeddingFunction(dim=EMBED_DIM)
+
+    def _generate_id(self, entity_type: str, entity_id: str) -> str:
+        return f"{entity_type}_{entity_id}"
+
+    # ── Ingestion ────────────────────────────────────────────────────────────
+
+    def add_tickets(self, tickets: list[dict[str, Any]], project_id: int) -> None:
+        if not tickets:
+            return
+        collection = self.collections["tickets"]
+        ids, documents, metadatas = [], [], []
+        for ticket in tickets:
+            ids.append(self._generate_id("ticket", str(ticket["id"])))
+            documents.append(self._ticket_to_text(ticket))
+            metadatas.append(
+                {
+                    "project_id": project_id,
+                    "ticket_id": str(ticket["id"]),
+                    "status": ticket.get("status", ""),
+                    "priority": ticket.get("priority", ""),
+                    "assignee_id": str(ticket.get("assigneeId", "")),
+                    "quality_score": ticket.get("qualityScore", 0),
+                    "raw_json": json.dumps(ticket),
+                }
+            )
+        collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
+
+    def add_blockers(self, blockers: list[dict[str, Any]], project_id: int) -> None:
+        if not blockers:
+            return
+        collection = self.collections["blockers"]
+        ids, documents, metadatas = [], [], []
+        for blocker in blockers:
+            ids.append(self._generate_id("blocker", str(blocker["id"])))
+            documents.append(self._blocker_to_text(blocker))
+            metadatas.append(
+                {
+                    "project_id": project_id,
+                    "blocker_id": str(blocker["id"]),
+                    "ticket_id": str(blocker.get("ticketId", "")),
+                    "escalation_level": blocker.get("escalationLevel", 1),
+                    "stalled_hours": blocker.get("stalledHours", 0),
+                    "raw_json": json.dumps(blocker),
+                }
+            )
+        collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
+
+    def add_developers(self, developers: list[dict[str, Any]], project_id: int) -> None:
+        if not developers:
+            return
+        collection = self.collections["developers"]
+        ids, documents, metadatas = [], [], []
+        for dev in developers:
+            ids.append(self._generate_id("dev", str(dev["id"])))
+            documents.append(self._developer_to_text(dev))
+            metadatas.append(
+                {
+                    "project_id": project_id,
+                    "developer_id": str(dev["id"]),
+                    "name": dev.get("name", ""),
+                    "role": dev.get("role", ""),
+                    "status": dev.get("status", ""),
+                    "raw_json": json.dumps(dev),
+                }
+            )
+        collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
+
+    def add_sprint(self, sprint: dict[str, Any], project_id: int) -> None:
+        if not sprint:
+            return
+        collection = self.collections["sprints"]
+        collection.upsert(
+            ids=[self._generate_id("sprint", str(sprint["id"]))],
+            documents=[self._sprint_to_text(sprint)],
+            metadatas=[
+                {
+                    "project_id": project_id,
+                    "sprint_id": str(sprint["id"]),
+                    "name": sprint.get("name", ""),
+                    "raw_json": json.dumps(sprint),
+                }
+            ],
+        )
+
+    def add_kpis(self, kpis: dict[str, Any], project_id: int) -> None:
+        if not kpis:
+            return
+        collection = self.collections["kpis"]
+        collection.upsert(
+            ids=[self._generate_id("kpi", str(project_id))],
+            documents=[self._kpis_to_text(kpis)],
+            metadatas=[{"project_id": project_id, "raw_json": json.dumps(kpis)}],
+        )
+
+    # ── Retrieval ────────────────────────────────────────────────────────────
+
+    def search(
+        self,
+        query: str,
+        project_id: int,
+        top_k: int = 5,
+        entity_types: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Semantic search across all (or selected) collections, filtered by project_id."""
+        types_to_search = entity_types or list(self.collections.keys())
+        all_results: list[dict[str, Any]] = []
+
+        for entity_type in types_to_search:
+            collection = self.collections.get(entity_type)
+            if collection is None:
+                continue
+
+            count = collection.count()
+            if count == 0:
+                continue
+
+            results = collection.query(
+                query_texts=[query],
+                n_results=min(top_k, count),
+                where={"project_id": project_id},
+            )
+
+            docs = results.get("documents") or [[]]
+            if not docs or not docs[0]:
+                continue
+
+            for i, doc in enumerate(docs[0]):
+                all_results.append(
+                    {
+                        "type": entity_type,
+                        "content": doc,
+                        "metadata": results["metadatas"][0][i],
+                        "distance": results["distances"][0][i] if results.get("distances") else None,
+                        "id": results["ids"][0][i],
+                    }
+                )
+
+        all_results.sort(key=lambda x: x["distance"] if x["distance"] is not None else 999)
+        return all_results[:top_k]
+
+    def get_all(self, entity_type: str, project_id: int) -> list[dict[str, Any]]:
+        collection = self.collections.get(entity_type)
+        if collection is None:
+            return []
+
+        result = collection.get(where={"project_id": project_id})
+        docs = result.get("documents") or []
+        metadatas = result.get("metadatas") or []
+        ids = result.get("ids") or []
+
+        return [
+            {"type": entity_type, "content": docs[i], "metadata": metadatas[i], "distance": None, "id": ids[i]}
+            for i in range(len(docs))
+        ]
+
+    def delete_project_data(self, project_id: int) -> None:
+        for collection in self.collections.values():
+            try:
+                collection.delete(where={"project_id": project_id})
+            except Exception:
+                pass
+
+    # ── Text formatters ──────────────────────────────────────────────────────
+
+    def _ticket_to_text(self, ticket: dict) -> str:
+        parts = [
+            f"Ticket {ticket.get('id', '')}",
+            ticket.get("title", ""),
+            f"Status: {ticket.get('status', '')}",
+            f"Priority: {ticket.get('priority', '')}",
+            f"Story points: {ticket.get('storyPoints', 0)}",
+            f"Quality score: {ticket.get('qualityScore', 0)}%",
+            f"Assignee: {ticket.get('assigneeName', 'unassigned')}",
+            f"Labels: {', '.join(ticket.get('labels', []))}",
+        ]
+        return ". ".join(parts)
+
+    def _blocker_to_text(self, blocker: dict) -> str:
+        parts = [
+            f"Blocker on ticket {blocker.get('ticketId', '')}",
+            blocker.get("title", ""),
+            f"Reason: {blocker.get('reason', '')}",
+            f"Impact: {blocker.get('impact', '')}",
+            f"Stalled for {blocker.get('stalledHours', 0)} hours",
+            f"Escalation level: {blocker.get('escalationLevel', 1)}",
+        ]
+        return ". ".join(parts)
+
+    def _developer_to_text(self, dev: dict) -> str:
+        parts = [
+            f"Developer {dev.get('name', '')}",
+            f"Role: {dev.get('role', '')}",
+            f"Status: {dev.get('status', '')}",
+            f"Completed: {dev.get('completedPoints', 0)}/{dev.get('totalPoints', 0)} points",
+            f"Tickets done: {dev.get('ticketsCompleted', 0)}/{dev.get('ticketsTotal', 0)}",
+            f"Estimation accuracy: {dev.get('estimationAccuracy', 0)}%",
+            f"Cycle time: {dev.get('avgCycleTime', 0)} days",
+        ]
+        return ". ".join(parts)
+
+    def _sprint_to_text(self, sprint: dict) -> str:
+        parts = [
+            f"Sprint {sprint.get('name', '')}",
+            f"From {sprint.get('startDate', '')} to {sprint.get('endDate', '')}",
+            f"{sprint.get('daysRemaining', 0)} days remaining",
+            f"Progress: {sprint.get('completedTickets', 0)}/{sprint.get('totalTickets', 0)} tickets",
+            f"In progress: {sprint.get('inProgressTickets', 0)}",
+            f"Blocked: {sprint.get('blockedTickets', 0)}",
+            f"Velocity: {sprint.get('velocity', 0)}",
+        ]
+        return ". ".join(parts)
+
+    def _kpis_to_text(self, kpis: dict) -> str:
+        parts = ["Project KPIs"]
+        for key, label in (
+            ("velocity", "Velocity"),
+            ("cycleTime", "Cycle time"),
+            ("leadTime", "Lead time"),
+            ("completionRate", "Completion rate"),
+            ("estimationAccuracy", "Estimation accuracy"),
+        ):
+            if key in kpis:
+                parts.append(f"{label}: {kpis[key].get('value', 'N/A')}")
+        return ". ".join(parts)
+
+
+# Singleton — imported as `chroma_store` elsewhere.
+chroma_store = ChromaVectorStore()

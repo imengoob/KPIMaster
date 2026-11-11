@@ -1,0 +1,75 @@
+"""
+Speech-to-text via Gemini's native audio understanding.
+
+Previous version used OpenAI Whisper. Since the project now standardizes on
+Gemini (see rag_service.py), speech-to-text uses the same provider and API
+key — Gemini 2.5 Flash accepts audio directly as input, so no separate
+transcription API/dependency is needed.
+"""
+
+from __future__ import annotations
+
+import base64
+from dataclasses import dataclass
+
+import httpx
+
+from app.config import settings
+
+GEMINI_API_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+)
+
+
+@dataclass
+class TranscriptionResult:
+    text: str
+    language: str | None = None
+
+
+class Transcriber:
+    def __init__(self) -> None:
+        self.api_key = settings.gemini_api_key
+        self.model = "gemini-2.5-flash"
+
+    async def transcribe(self, audio_bytes: bytes, language: str = "fr") -> TranscriptionResult:
+        if not self.api_key:
+            raise RuntimeError("GEMINI_API_KEY is not configured")
+
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+        lang_hint = "French" if language == "fr" else "English"
+
+        payload = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "text": (
+                                f"Transcribe this {lang_hint} audio clip exactly as spoken. "
+                                "Return ONLY the transcription, no commentary."
+                            )
+                        },
+                        {"inline_data": {"mime_type": "audio/webm", "data": audio_b64}},
+                    ],
+                }
+            ],
+            "generationConfig": {"temperature": 0.0, "maxOutputTokens": 300},
+        }
+
+        url = GEMINI_API_URL.format(model=self.model)
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(url, params={"key": self.api_key}, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+
+        try:
+            parts = data["candidates"][0]["content"]["parts"]
+            text = "".join(p.get("text", "") for p in parts).strip()
+        except (KeyError, IndexError):
+            text = ""
+
+        return TranscriptionResult(text=text, language=language)
+
+
+transcriber = Transcriber()

@@ -1,0 +1,420 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Unit tests with coverage
+        run: npm run test:coverage
+
+      - name: Production build
+        run: npm run build
+
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: coverage/
+          retention-days: 7
+
+  backend:
+    name: Backend validation
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sprintpulse
+          POSTGRES_PASSWORD: sprintpulse
+          POSTGRES_DB: sprintpulse_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sprintpulse"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      APP_ENV: testing
+      DATABASE_URL: postgresql+asyncpg://sprintpulse:sprintpulse@localhost:5432/sprintpulse_test
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      CELERY_RESULT_BACKEND: redis://localhost:6379/1
+      SECRET_KEY: ci-test-secret-key-32-chars-minimum-x
+      AUTH_JWT_SECRET: ci-test-jwt-secret-32-chars-minimum-x
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-test.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-test.txt
+
+      - name: Compile Python modules
+        run: python -m compileall app scripts tests
+
+      - name: Validate migrations
+        run: |
+          python -m alembic upgrade head
+          python -m alembic current
+          python -m alembic check
+          python scripts/validate_data_quality.py --profile schema
+
+      - name: Backend tests with coverage
+        run: |
+          pytest tests/ \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-fail-under=55 \
+            -v
+
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
+          retention-days: 7
+
+  integration_contracts:
+    name: Integration contract tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      APP_ENV: testing
+      DATABASE_URL: postgresql+asyncpg://sprintpulse:sprintpulse@localhost:5432/sprintpulse_contracts
+      SECRET_KEY: ci-test-secret-key-32-chars-minimum-x
+      AUTH_JWT_SECRET: ci-test-jwt-secret-32-chars-minimum-x
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-test.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-test.txt
+
+      - name: Trello, Jira, GitHub, OAuth, and sync contracts
+        run: |
+          pytest \
+            tests/test_api_integrations.py \
+            tests/test_api_trello.py \
+            tests/test_integrations_encryption.py \
+            tests/test_integrations_github_adapter.py \
+            tests/test_integrations_oauth.py \
+            tests/test_integrations_smoke.py \
+            tests/test_integrations_trello_adapter.py \
+            tests/test_trello_list_enum.py \
+            tests/test_trello_services.py \
+            -v
+
+  data_quality:
+    name: Migration and data-quality gates
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sprintpulse
+          POSTGRES_PASSWORD: sprintpulse
+          POSTGRES_DB: sprintpulse_quality
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sprintpulse"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      APP_ENV: testing
+      DATABASE_URL: postgresql+asyncpg://sprintpulse:sprintpulse@localhost:5432/sprintpulse_quality
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      CELERY_RESULT_BACKEND: redis://localhost:6379/1
+      SECRET_KEY: ci-test-secret-key-32-chars-minimum-x
+      AUTH_JWT_SECRET: ci-test-jwt-secret-32-chars-minimum-x
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-test.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-test.txt
+
+      - name: Migrate and seed demo data
+        run: |
+          python -m alembic upgrade head
+          python scripts/seed.py
+          python seed_demo_flow.py
+
+      - name: Validate seeded data quality
+        run: python scripts/validate_data_quality.py --profile demo --json-out data-quality-report.json
+
+      - name: Upload data-quality report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: data-quality-report
+          path: backend/data-quality-report.json
+          retention-days: 7
+
+  e2e:
+    name: E2E validation
+    runs-on: ubuntu-latest
+    needs: [frontend, backend, integration_contracts, data_quality]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sprintpulse
+          POSTGRES_PASSWORD: sprintpulse
+          POSTGRES_DB: sprintpulse_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sprintpulse"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      APP_ENV: development
+      DATABASE_URL: postgresql+asyncpg://sprintpulse:sprintpulse@localhost:5432/sprintpulse_e2e
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      CELERY_RESULT_BACKEND: redis://localhost:6379/1
+      SECRET_KEY: e2e-test-secret-key-32-chars-minimum
+      AUTH_JWT_SECRET: e2e-test-jwt-secret-32-chars-minimum
+      VITE_API_BASE_URL: http://localhost:8000
+      PLAYWRIGHT_BASE_URL: http://localhost:4173
+      FRONTEND_URL: http://localhost:4173
+      JIRA_CLIENT_ID: ci-jira-client-id
+      JIRA_CLIENT_SECRET: ci-jira-client-secret
+      MICROSOFT_CLIENT_ID: ci-microsoft-client-id
+      MICROSOFT_CLIENT_SECRET: ci-microsoft-client-secret
+      E2E_GITHUB_TOKEN: ${{ secrets.E2E_GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-test.txt
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-test.txt
+
+      - name: Migrate, seed, and validate database
+        working-directory: backend
+        run: |
+          python -m alembic upgrade head
+          python scripts/seed.py
+          python seed_demo_flow.py
+          python scripts/validate_data_quality.py --profile demo
+
+      - name: Start backend
+        working-directory: backend
+        run: |
+          python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > ../backend-e2e.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl -sf http://localhost:8000/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat ../backend-e2e.log
+          exit 1
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build and start frontend
+        run: |
+          npm run build
+          npx vite preview --host 0.0.0.0 --port 4173 > frontend-e2e.log 2>&1 &
+          for attempt in {1..20}; do
+            if curl -sf http://localhost:4173; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat frontend-e2e.log
+          exit 1
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+            backend-e2e.log
+            frontend-e2e.log
+          retention-days: 7
+
+  required:
+    name: Required CI gates
+    runs-on: ubuntu-latest
+    needs: [frontend, backend, integration_contracts, data_quality, e2e]
+    if: always()
+
+    steps:
+      - name: Verify all required jobs passed
+        env:
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          BACKEND_RESULT: ${{ needs.backend.result }}
+          INTEGRATION_CONTRACTS_RESULT: ${{ needs.integration_contracts.result }}
+          DATA_QUALITY_RESULT: ${{ needs.data_quality.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+        run: |
+          failed=0
+          for gate in \
+            "frontend:$FRONTEND_RESULT" \
+            "backend:$BACKEND_RESULT" \
+            "integration_contracts:$INTEGRATION_CONTRACTS_RESULT" \
+            "data_quality:$DATA_QUALITY_RESULT" \
+            "e2e:$E2E_RESULT"; do
+            name="${gate%%:*}"
+            result="${gate##*:}"
+            echo "$name => $result"
+            if [ "$result" != "success" ]; then
+              failed=1
+            fi
+          done
+          exit "$failed"
